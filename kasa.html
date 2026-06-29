@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kasa Takip Sistemi</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg1:#ffffff;--bg2:#f5f5f3;--bg3:#eeede8;
+  --tx1:#1a1a18;--tx2:#6b6b67;--tx3:#9e9e99;
+  --bd1:rgba(0,0,0,0.35);--bd2:rgba(0,0,0,0.22);--bd3:rgba(0,0,0,0.12);
+  --r-md:8px;--r-lg:12px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+body{font-family:var(--font);font-size:14px;color:var(--tx1);background:var(--bg3);min-height:100vh;}
+.app{max-width:1200px;margin:0 auto;padding:1.25rem 1rem;}
+
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:0.5px solid var(--bd3);padding-bottom:1rem;align-items:center;}
+.nav-btn{padding:6px 14px;border:0.5px solid var(--bd3);border-radius:var(--r-md);background:transparent;color:var(--tx2);cursor:pointer;font-size:13px;white-space:nowrap;font-family:var(--font);}
+.nav-btn:hover{background:var(--bg2);}
+.nav-btn.active{background:var(--bg1);border-color:var(--bd1);color:var(--tx1);font-weight:500;}
+.add-proje-btn{padding:6px 12px;border:0.5px dashed var(--bd2);border-radius:var(--r-md);background:transparent;color:var(--tx2);cursor:pointer;font-size:13px;font-family:var(--font);margin-left:auto;}
+.add-proje-btn:hover{background:var(--bg2);}
+.sync-info{font-size:11px;color:var(--tx3);display:flex;align-items:center;gap:4px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#9e9e99;display:inline-block;}
+.sync-dot.ok{background:#3B6D11;}.sync-dot.err{background:#A32D2D;}.sync-dot.loading{background:#633806;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.page{display:none;}.page.active{display:block;}
+
+/* ÖZET KARTLAR */
+.ozet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:1.5rem;}
+.ozet-card{background:var(--bg2);border-radius:var(--r-md);padding:.85rem 1rem;}
+.ozet-label{font-size:11px;color:var(--tx2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+.ozet-val{font-size:17px;font-weight:500;font-variant-numeric:tabular-nums;}
+.ozet-sub{font-size:11px;color:var(--tx3);margin-top:3px;font-variant-numeric:tabular-nums;}
+.g{color:#3B6D11;}.r{color:#A32D2D;}.o{color:#633806;}.n{color:var(--tx1);}
+
+.tbl-card{background:var(--bg1);border:0.5px solid var(--bd3);border-radius:var(--r-lg);padding:1rem;margin-bottom:1.5rem;overflow-x:auto;}
+.sec-title{font-size:12px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;display:flex;align-items:center;gap:8px;}
+.badge{font-size:11px;padding:2px 8px;border-radius:var(--r-md);font-weight:400;text-transform:none;letter-spacing:0;}
+.bm{background:#E6F1FB;color:#0C447C;}.bt{background:#FAEEDA;color:#633806;}.bg-b{background:#EAF3DE;color:#27500A;}
+
+/* BEKLEMEDEKİ */
+.ba-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;}
+@media(max-width:600px){.ba-grid{grid-template-columns:1fr;}}
+.ba-card{background:var(--bg1);border:0.5px solid var(--bd3);border-radius:var(--r-lg);padding:1rem;}
+.ba-card h3{font-size:12px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;}
+.ba-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--bd3);font-size:13px;}
+.ba-row:last-child{border-bottom:none;}
+.ba-total{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;font-weight:500;font-size:14px;margin-top:4px;border-top:0.5px solid var(--bd3);}
+.no-data{color:var(--tx3);font-size:13px;padding:12px 0;}
+.beklemede-bolum{margin-top:2rem;padding-top:1.5rem;border-top:2px dashed var(--bd2);}
+.beklemede-baslik{font-size:13px;font-weight:500;color:var(--tx2);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.badge-bek{background:#FAEEDA;color:#633806;font-size:12px;padding:3px 10px;border-radius:var(--r-md);}
+
+/* ALACAKLAR MINI */
+.alacak-mini{background:var(--bg1);border:0.5px solid var(--bd3);border-radius:var(--r-lg);padding:.85rem 1rem;margin-bottom:1.5rem;}
+.alacak-mini-baslik{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;}
+.alacak-mini-satirlar{display:flex;flex-wrap:wrap;gap:6px 16px;}
+.alacak-mini-satir{font-size:12px;color:var(--tx2);display:flex;gap:6px;}
+.alacak-mini-satir span.tutar{color:#633806;font-weight:500;}
+
+table{width:100%;border-collapse:collapse;min-width:600px;}
+thead th{font-size:12px;font-weight:500;color:var(--tx2);padding:6px 10px;text-align:left;border-bottom:0.5px solid var(--bd3);}
+th.ra,td.ra{text-align:right;}th.ca,td.ca{text-align:center;}
+tbody tr{border-bottom:0.5px solid var(--bd3);}
+tbody tr:last-child{border-bottom:none;}
+td{padding:7px 10px;vertical-align:middle;font-variant-numeric:tabular-nums;}
+td input[type=text],td input[type=number]{border:none;background:transparent;color:var(--tx1);font-size:14px;outline:none;width:100%;padding:0;font-family:var(--font);}
+td input.ra{text-align:right;}
+td input::placeholder{color:var(--tx3);}
+td select{border:none;background:transparent;color:var(--tx1);font-size:13px;outline:none;cursor:pointer;font-family:var(--font);}
+tfoot tr td{padding:8px 10px;border-top:1px solid var(--bd2);font-weight:500;}
+
+.del-btn{background:none;border:none;cursor:pointer;color:var(--tx3);padding:2px 4px;border-radius:4px;font-size:16px;line-height:1;font-family:var(--font);}
+.del-btn:hover{color:#E24B4A;background:#FCEBEB;}
+.add-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:0.5px dashed var(--bd2);border-radius:var(--r-md);background:transparent;color:var(--tx2);cursor:pointer;font-size:13px;margin-top:8px;font-family:var(--font);}
+.add-btn:hover{background:var(--bg2);}
+
+.proje-header{background:var(--bg2);border:0.5px solid var(--bd3);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.5rem;}
+.proje-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+@media(max-width:600px){.proje-row{grid-template-columns:1fr;}}
+.fl{font-size:12px;color:var(--tx2);margin-bottom:4px;}
+.proje-row input,.proje-row select{width:100%;padding:8px 10px;border:0.5px solid var(--bd3);border-radius:var(--r-md);background:var(--bg1);color:var(--tx1);font-size:14px;outline:none;font-family:var(--font);}
+
+.ana-tablo tbody tr:hover{background:var(--bg2);}
+.proje-link{color:#185FA5;cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-weight:500;}
+.durum-pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;}
+.dp-devam{background:#E6F1FB;color:#0C447C;}.dp-tam{background:#EAF3DE;color:#27500A;}.dp-bek{background:#FAEEDA;color:#633806;}
+
+.yukleniyor{text-align:center;padding:3rem;color:var(--tx2);font-size:15px;}
+.gc-check{width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;}
+.cb-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--tx3);}
+
+@media(max-width:700px){
+  .ozet-grid{grid-template-columns:repeat(2,1fr);}
+  .nav-btn{font-size:12px;padding:5px 10px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="nav" id="nav">
+  <button class="nav-btn active" id="nav-ana" onclick="showPage('ana')">🏠 Ana Kasa</button>
+  <button class="add-proje-btn" id="add-proje-btn" onclick="yeniProje()" style="display:none;">+ Yeni proje ekle</button>
+  <div class="sync-info"><span class="sync-dot" id="sync-dot"></span><span id="sync-text">Bağlanıyor...</span></div>
+</div>
+
+<div class="page active" id="page-ana">
+  <div class="yukleniyor" id="yukleniyor">⏳ Veriler yükleniyor...</div>
+  <div id="ana-icerik" style="display:none;">
+
+    <!-- AKTİF PROJELER -->
+    <div class="sec-title">Aktif projeler özeti <span class="badge bm">Devam ediyor + Tamamlandı</span></div>
+
+    <!-- ÖZET KARTLAR: Kalan alacak önce -->
+    <div class="ozet-grid" id="ana-ozet"></div>
+
+    <!-- AKTİF PROJELER TABLOSU -->
+    <div class="tbl-card">
+      <table class="ana-tablo">
+        <thead><tr>
+          <th>Proje / Müşteri</th>
+          <th class="ra">Sözleşme</th>
+          <th class="ra">Tahsilat</th>
+          <th class="ra">Kalan alacak</th>
+          <th class="ra">Bekleyen borç</th>
+          <th class="ra">Ödenen gider</th>
+          <th class="ra">Net kâr</th>
+          <th class="ra">Müşteri masrafı</th>
+          <th>Durum</th>
+        </tr></thead>
+        <tbody id="ana-tbody"></tbody>
+        <tfoot><tr id="ana-tfoot"></tr></tfoot>
+      </table>
+    </div>
+
+    <!-- ALT KİLOMETRE GRID -->
+    <div class="ba-grid">
+      <div class="ba-card" style="display:flex;flex-direction:column;">
+        <h3>Bekleyen borçlar (türe göre)</h3>
+        <div style="display:grid;grid-template-columns:1fr 120px 120px;gap:4px;font-size:11px;color:var(--tx3);padding:0 0 4px;border-bottom:0.5px solid var(--bd3);margin-bottom:4px;">
+          <span>Kalem</span><span style="text-align:right;">Bekleyen</span><span style="text-align:right;">Ödenen</span>
+        </div>
+        <div id="borc-listesi"><p class="no-data">Henüz kalem yok</p></div>
+        <div style="display:grid;grid-template-columns:1fr 120px 120px;gap:4px;font-weight:500;font-size:13px;padding-top:6px;margin-top:4px;border-top:0.5px solid var(--bd2);">
+          <span>Toplam</span>
+          <span style="text-align:right;" class="r" id="toplam-borc">₺0</span>
+          <span style="text-align:right;" class="g" id="toplam-odenen">₺0</span>
+        </div>
+      </div>
+      <div class="ba-card" style="padding:.65rem .85rem;">
+        <h3 style="font-size:11px;margin-bottom:.4rem;">📋 Tahsil bekleyen masraflar</h3>
+        <div id="alacak-listesi" style="font-size:12px;"><p class="no-data">Yok</p></div>
+        <div class="ba-total" style="font-size:12px;padding-top:5px;margin-top:3px;"><span>Toplam</span><span id="toplam-alacak" class="o">₺0</span></div>
+      </div>
+    </div>
+
+    <!-- BEKLEMEDEKİ PROJELER -->
+    <div class="beklemede-bolum">
+      <div class="beklemede-baslik">⏸ Beklemedeki projeler <span class="badge-bek">Aktif toplamlardan ayrı tutulmaktadır</span></div>
+      <div class="ozet-grid" id="bek-ozet"></div>
+      <div class="tbl-card">
+        <table class="ana-tablo">
+          <thead><tr>
+            <th>Proje / Müşteri</th>
+            <th class="ra">Sözleşme</th>
+            <th class="ra">Tahsilat</th>
+            <th class="ra">Kalan alacak</th>
+            <th class="ra">Gerçekleşen maliyet</th>
+            <th class="ra">Bekleyen maliyet</th>
+            <th class="ra">Net kâr</th>
+            <th class="ra">Müşteri masrafı</th>
+            <th>Durum</th>
+          </tr></thead>
+          <tbody id="bek-tbody"></tbody>
+          <tfoot><tr id="bek-tfoot"></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBssZhOB5dCoHOYdbfbFm3Er-w3Vjz7R3A",
+  authDomain: "kasa-takip-5b962.firebaseapp.com",
+  projectId: "kasa-takip-5b962",
+  storageBucket: "kasa-takip-5b962.firebasestorage.app",
+  messagingSenderId: "1024298938463",
+  appId: "1:1024298938463:web:5ca3e422a4173f46e42bea"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Varsayılan kalem listesi — Firebase'deki global listeyle senkronize olur
+const VARSAYILAN_KALEMLER = [
+  "Bekir mimari","Sema mimari imza","Statik proje","Kuyu projesi",
+  "Tesisat projesi","Zemin etüt","İş takibi-ozalit-genel yönetim giderleri",
+  "Bekir %10 payı","KENTSEL MUSTAFA","ASBEST MUSTAFA",
+  "Yarısı bizden Mustafa","Harita Yola terk sınır d.","ÇELİK ÇATI"
+];
+
+let projeler=[], projeIdx=0, kayitTimer=null, ilkYukleme=true;
+let globalKalemler=[...VARSAYILAN_KALEMLER]; // Firebase'den gelecek global liste
+
+function bugun(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear(); }
+function fmt(n){ if(n===null||n===undefined||isNaN(n))return'—'; return'₺'+Math.round(n).toLocaleString('tr-TR'); }
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setSyncStatus(d,m){ document.getElementById('sync-dot').className='sync-dot '+d; document.getElementById('sync-text').textContent=m; }
+
+// ===================== VERİ TOPLA =====================
+function veriTopla(){
+  const sayfalar={};
+  projeler.forEach(pid=>{
+    const pg=document.getElementById('page-p'+pid); if(!pg)return;
+    const maliyetKalemler=[];
+    pg.querySelectorAll('#maliyet-tbody-'+pid+' tr').forEach(tr=>{
+      const inps=tr.querySelectorAll('input');
+      maliyetKalemler.push({
+        ad:inps[0]?.value||'',tutar:inps[1]?.value||'',
+        not:inps[2]?.value||'',gerceklesti:inps[3]?.checked||false,
+        teslimAlindi:inps[4]?.checked||false
+      });
+    });
+    const musteriMasraflar=[];
+    pg.querySelectorAll('#musteri-masraf-tbody-'+pid+' tr').forEach(tr=>{
+      const inps=tr.querySelectorAll('input');
+      musteriMasraflar.push({aciklama:inps[0]?.value||'',tutar:inps[1]?.value||'',tarih:inps[2]?.value||'',tahsil:inps[3]?.checked||false});
+    });
+    const tahsilatlar=[];
+    pg.querySelectorAll('#tahsilat-tbody-'+pid+' tr').forEach(tr=>{
+      const inps=tr.querySelectorAll('input');
+      tahsilatlar.push({aciklama:inps[0]?.value||'',tutar:inps[1]?.value||'',tarih:inps[2]?.value||''});
+    });
+    sayfalar[pid]={
+      sozlesme:pg.querySelector('.sozlesme-input')?.value||'',
+      musteri:pg.querySelector('.musteri-input')?.value||'',
+      durum:pg.querySelector('.durum-sel')?.value||'Devam ediyor',
+      maliyetKalemler,musteriMasraflar,tahsilatlar
+    };
+  });
+  return{projeIdx,projeler,sayfalar,globalKalemler};
+}
+
+async function kaydet(){
+  try{
+    setSyncStatus('loading','Kaydediliyor...');
+    await setDoc(doc(db,'kasa','veriler'),veriTopla());
+    const now=new Date();
+    setSyncStatus('ok','Kaydedildi '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'));
+  }catch(e){ console.error(e); setSyncStatus('err','Kayıt hatası!'); }
+}
+function otomatikKaydet(){ clearTimeout(kayitTimer); kayitTimer=setTimeout(kaydet,1000); }
+
+// ===================== YENİ KALEM EKLENİNCE TÜM PROJELERE EKLE =====================
+function globalKalemEkle(kalemAdi){
+  if(!kalemAdi||globalKalemler.includes(kalemAdi)) return;
+  globalKalemler.push(kalemAdi);
+  // Tüm mevcut projelere bu kalemi ekle (tutar boş)
+  projeler.forEach(pid=>{
+    const tbody=document.getElementById('maliyet-tbody-'+pid);
+    if(!tbody) return;
+    // Zaten var mı kontrol et
+    let varmi=false;
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      if(tr.querySelector('input[type=text]')?.value===kalemAdi) varmi=true;
+    });
+    if(!varmi) ekleKalem('maliyet',pid,kalemAdi,'','',false,false,true);
+  });
+  otomatikKaydet();
+}
+
+// ===================== DİNLE =====================
+function baslatDinleme(){
+  onSnapshot(doc(db,'kasa','veriler'),(snap)=>{
+    if(snap.exists()){
+      const data=snap.data();
+      if(ilkYukleme){
+        ilkYukleme=false;
+        globalKalemler=data.globalKalemler||[...VARSAYILAN_KALEMLER];
+        tumSayfaTemizle();
+        projeIdx=data.projeIdx||0;
+        (data.projeler||[]).forEach(pid=>projeOlustur(pid,data.sayfalar?.[pid]));
+        projeler=data.projeler||[];
+        guncellAna();
+        document.getElementById('yukleniyor').style.display='none';
+        document.getElementById('ana-icerik').style.display='block';
+        document.getElementById('add-proje-btn').style.display='';
+        setSyncStatus('ok','Bağlı');
+      } else {
+        if(JSON.stringify(veriTopla())!==JSON.stringify(data)){
+          globalKalemler=data.globalKalemler||[...VARSAYILAN_KALEMLER];
+          tumSayfaTemizle();
+          projeIdx=data.projeIdx||0;
+          (data.projeler||[]).forEach(pid=>projeOlustur(pid,data.sayfalar?.[pid]));
+          projeler=data.projeler||[];
+          guncellAna();
+          setSyncStatus('ok','Güncellendi ✓');
+        }
+      }
+    } else {
+      ilkYukleme=false;
+      document.getElementById('yukleniyor').style.display='none';
+      document.getElementById('ana-icerik').style.display='block';
+      document.getElementById('add-proje-btn').style.display='';
+      setSyncStatus('ok','Bağlı');
+      yeniProje(); showPage('ana');
+    }
+  },(err)=>{ console.error(err); setSyncStatus('err','Bağlantı hatası'); });
+}
+
+// ===================== PROJE OLUŞTUR =====================
+function tumSayfaTemizle(){
+  projeler.forEach(pid=>{ document.getElementById('page-p'+pid)?.remove(); document.getElementById('nav-p'+pid)?.remove(); });
+  projeler=[];
+}
+
+function projeOlustur(pid,s){
+  const nav=document.getElementById('nav');
+  const addBtn=document.getElementById('add-proje-btn');
+  const btn=document.createElement('button');
+  btn.className='nav-btn'; btn.id='nav-p'+pid; btn.onclick=()=>showPage('p'+pid);
+  btn.textContent='📁 '+(s?.musteri||'Proje '+pid);
+  nav.insertBefore(btn,addBtn);
+
+  const page=document.createElement('div');
+  page.className='page'; page.id='page-p'+pid;
+  page.innerHTML=`
+    <div class="proje-header">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+        <span style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;">proje bilgileri</span>
+        <button class="del-btn" style="font-size:13px;padding:4px 10px;border:0.5px solid var(--bd3);border-radius:var(--r-md);" onclick="window._projeKaldir(${pid})">× Projeyi kaldır</button>
+      </div>
+      <div class="proje-row">
+        <div><div class="fl">Müşteri adı</div>
+          <input type="text" class="musteri-input" placeholder="örn. Şakir Kurt" value="${escHtml(s?.musteri||'')}"
+            oninput="document.getElementById('nav-p${pid}').textContent='📁 '+(this.value||'Proje ${pid}');window._guncelle(${pid});window._otoKaydet();">
+        </div>
+        <div><div class="fl">Sözleşme tutarı (TL)</div>
+          <input type="number" class="sozlesme-input" placeholder="500000" value="${escHtml(s?.sozlesme||'')}"
+            oninput="window._guncelle(${pid});window._otoKaydet();">
+        </div>
+        <div><div class="fl">Proje durumu</div>
+          <select class="durum-sel" onchange="window._guncelle(${pid});window._otoKaydet();">
+            <option ${s?.durum==='Devam ediyor'?'selected':''}>Devam ediyor</option>
+            <option ${s?.durum==='Tamamlandı'?'selected':''}>Tamamlandı</option>
+            <option ${s?.durum==='Beklemede'?'selected':''}>Beklemede</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="ozet-grid">
+      <div class="ozet-card"><div class="ozet-label">Kalan alacak</div><div class="ozet-val r" id="oz-k-${pid}">—</div></div>
+      <div class="ozet-card">
+        <div class="ozet-label">Toplam borç</div>
+        <div class="ozet-val r" id="oz-mg-${pid}">₺0</div>
+        <div class="ozet-sub" id="oz-mb-${pid}">Bekleyen: ₺0</div>
+      </div>
+      <div class="ozet-card" id="oz-nd-card-${pid}">
+        <div class="ozet-label">Net durum (alacak − borç)</div>
+        <div class="ozet-val" id="oz-nd-${pid}">—</div>
+      </div>
+      <div class="ozet-card"><div class="ozet-label">Sözleşme</div><div class="ozet-val n" id="oz-s-${pid}">—</div></div>
+      <div class="ozet-card"><div class="ozet-label">Tahsilat</div><div class="ozet-val g" id="oz-t-${pid}">₺0</div></div>
+      <div class="ozet-card"><div class="ozet-label">Net kâr</div><div class="ozet-val g" id="oz-kar-${pid}">—</div></div>
+      <div class="ozet-card"><div class="ozet-label">Müşteri masrafı bekl.</div><div class="ozet-val o" id="oz-mm-${pid}">₺0</div></div>
+    </div>
+
+    <div class="sec-title">Maliyet kalemleri <span class="badge bm">Teklife dahil</span></div>
+    <div class="tbl-card">
+      <table>
+        <thead><tr>
+          <th style="width:36px;"></th>
+          <th>Kalem</th>
+          <th class="ra" style="width:130px;">Tutar (TL)</th>
+          <th style="width:120px;">Not</th>
+          <th class="ca" style="width:115px;">Gerçekleşti mi?</th>
+          <th class="ca" style="width:120px;">Teslim alındı mı?</th>
+        </tr></thead>
+        <tbody id="maliyet-tbody-${pid}"></tbody>
+      </table>
+      <button class="add-btn" onclick="window._ekleVeGlobal('maliyet',${pid})">+ Kalem ekle</button>
+    </div>
+
+    <div class="sec-title">Müşteri adına ödemeler <span class="badge bt">Tahsil bekliyor</span></div>
+    <div class="tbl-card">
+      <table>
+        <thead><tr>
+          <th style="width:36px;"></th>
+          <th>Açıklama</th>
+          <th class="ra" style="width:150px;">Tutar (TL)</th>
+          <th style="width:140px;">Tarih</th>
+          <th class="ca" style="width:110px;">Tahsil edildi</th>
+        </tr></thead>
+        <tbody id="musteri-masraf-tbody-${pid}"></tbody>
+      </table>
+      <button class="add-btn" onclick="window._ekle('musteri-masraf',${pid})">+ Masraf ekle</button>
+    </div>
+
+    <div class="sec-title">Tahsilatlar <span class="badge bg-b">Gelir</span></div>
+    <div class="tbl-card">
+      <table>
+        <thead><tr>
+          <th style="width:36px;"></th>
+          <th>Açıklama</th>
+          <th class="ra" style="width:150px;">Tutar (TL)</th>
+          <th style="width:180px;">Tarih</th>
+        </tr></thead>
+        <tbody id="tahsilat-tbody-${pid}"></tbody>
+      </table>
+      <button class="add-btn" onclick="window._ekle('tahsilat',${pid})">+ Tahsilat ekle</button>
+    </div>`;
+  document.querySelector('.app').appendChild(page);
+
+  // Maliyet kalemlerini doldur — globalKalemler baz alınır, kayıtlı tutarlar eşleştirilir
+  const kayitliMap={};
+  (s?.maliyetKalemler||[]).forEach(k=>{ kayitliMap[k.ad]=k; });
+
+  globalKalemler.forEach(ad=>{
+    const k=kayitliMap[ad]||{};
+    ekleKalem('maliyet',pid,ad,k.tutar||'',k.not||'',k.gerceklesti||false,k.teslimAlindi||false);
+  });
+  // Kayıtlı olup globalKalemler'de olmayan eski kalemler
+  (s?.maliyetKalemler||[]).forEach(k=>{
+    if(!globalKalemler.includes(k.ad)){
+      ekleKalem('maliyet',pid,k.ad,k.tutar||'',k.not||'',k.gerceklesti||false,k.teslimAlindi||false);
+    }
+  });
+
+  s?.musteriMasraflar?.forEach(k=>ekleKalem('musteri-masraf',pid,k.aciklama,k.tutar,k.tarih,k.tahsil));
+  s?.tahsilatlar?.forEach(k=>ekleKalem('tahsilat',pid,k.aciklama,k.tutar,k.tarih));
+  guncelleProjeSayfasi(pid);
+}
+
+// ===================== KALEM EKLE =====================
+function ekleKalem(tip,pid,a,b,c,d,e,sessiz){
+  let tbody,tr;
+  if(tip==='maliyet'){
+    tbody=document.getElementById('maliyet-tbody-'+pid);
+    tr=tbody.insertRow();
+    tr.innerHTML=`
+      <td><button class="del-btn" onclick="this.closest('tr').remove();window._guncelle(${pid});window._otoKaydet();">×</button></td>
+      <td><input type="text" placeholder="Kalem adı" value="${escHtml(a||'')}"
+        oninput="window._guncelle(${pid});window._otoKaydet();"></td>
+      <td class="ra"><input type="number" placeholder="0" value="${escHtml(b||'')}" class="ra" style="text-align:right;"
+        oninput="window._guncelle(${pid});window._otoKaydet();"></td>
+      <td><input type="text" placeholder="not..." value="${escHtml(c||'')}" oninput="window._otoKaydet();"></td>
+      <td class="ca"><div class="cb-wrap">
+        <input type="checkbox" class="gc-check" ${d?'checked':''} onchange="window._guncelle(${pid});window._otoKaydet();this.nextElementSibling.textContent=this.checked?'Evet':'Hayır'">
+        <span>${d?'Evet':'Hayır'}</span>
+      </div></td>
+      <td class="ca"><div class="cb-wrap">
+        <input type="checkbox" class="gc-check" style="accent-color:#185FA5;" ${e?'checked':''} onchange="window._otoKaydet();this.nextElementSibling.textContent=this.checked?'Evet':'Hayır'">
+        <span>${e?'Evet':'Hayır'}</span>
+      </div></td>`;
+    if(!sessiz) guncelleProjeSayfasi(pid);
+  } else if(tip==='musteri-masraf'){
+    tbody=document.getElementById('musteri-masraf-tbody-'+pid);
+    tr=tbody.insertRow();
+    tr.innerHTML=`
+      <td><button class="del-btn" onclick="this.closest('tr').remove();window._guncelle(${pid});window._otoKaydet();">×</button></td>
+      <td><input type="text" placeholder="örn. Belediye harcı" value="${escHtml(a||'')}" oninput="window._guncelle(${pid});window._otoKaydet();"></td>
+      <td class="ra"><input type="number" placeholder="0" value="${escHtml(b||'')}" class="ra" style="text-align:right;" oninput="window._guncelle(${pid});window._otoKaydet();"></td>
+      <td><input type="text" placeholder="gg.aa.yyyy" value="${escHtml(c||bugun())}" oninput="window._otoKaydet();"></td>
+      <td class="ca"><input type="checkbox" class="gc-check" ${d?'checked':''} onchange="window._guncelle(${pid});window._otoKaydet();"></td>`;
+  } else {
+    tbody=document.getElementById('tahsilat-tbody-'+pid);
+    tr=tbody.insertRow();
+    tr.innerHTML=`
+      <td><button class="del-btn" onclick="this.closest('tr').remove();window._guncelle(${pid});window._otoKaydet();">×</button></td>
+      <td><input type="text" placeholder="örn. 1. hakediş" value="${escHtml(a||'')}" oninput="window._guncelle(${pid});window._otoKaydet();"></td>
+      <td class="ra"><input type="number" placeholder="0" value="${escHtml(b||'')}" class="ra" style="text-align:right;" oninput="window._guncelle(${pid});window._otoKaydet();"></td>
+      <td><input type="text" placeholder="gg.aa.yyyy" value="${escHtml(c||bugun())}" oninput="window._otoKaydet();"></td>`;
+  }
+}
+
+// Yeni maliyet kalemi ekle butonu — global listeye de ekler
+window._ekleVeGlobal=function(tip,pid){
+  ekleKalem(tip,pid,'','','',false,false);
+  // Kalem adı girilince global listeye ekle
+  const tbody=document.getElementById('maliyet-tbody-'+pid);
+  const sonTr=tbody.lastElementChild;
+  if(!sonTr) return;
+  const input=sonTr.querySelector('input[type=text]');
+  if(!input) return;
+  input.addEventListener('blur',function(){
+    const ad=this.value.trim();
+    if(ad) globalKalemEkle(ad);
+  },{once:true});
+}
+
+// ===================== HESAPLA =====================
+function projeVerisi(pid){
+  const pg=document.getElementById('page-p'+pid); if(!pg)return null;
+  const sozlesme=parseFloat(pg.querySelector('.sozlesme-input')?.value)||0;
+  const musteri=pg.querySelector('.musteri-input')?.value||'Proje '+pid;
+  const durum=pg.querySelector('.durum-sel')?.value||'Devam ediyor';
+  let maliyetGercek=0,maliyetBekleyen=0,maliyetKalemler=[];
+  pg.querySelectorAll('#maliyet-tbody-'+pid+' tr').forEach(tr=>{
+    const inps=tr.querySelectorAll('input');
+    const ad=inps[0]?.value||'';
+    const tutar=parseFloat(inps[1]?.value)||0;
+    const gerceklesti=inps[3]?.checked||false;
+    if(gerceklesti) maliyetGercek+=tutar; else maliyetBekleyen+=tutar;
+    if(ad&&tutar>0) maliyetKalemler.push({ad,tutar,gerceklesti});
+  });
+  let tahsilat=0;
+  pg.querySelectorAll('#tahsilat-tbody-'+pid+' tr').forEach(tr=>{ tahsilat+=parseFloat(tr.querySelectorAll('input')[1]?.value)||0; });
+  let musteriMasrafBekl=0;
+  pg.querySelectorAll('#musteri-masraf-tbody-'+pid+' tr').forEach(tr=>{
+    const v=parseFloat(tr.querySelectorAll('input')[1]?.value)||0;
+    if(!tr.querySelector('input[type=checkbox]')?.checked) musteriMasrafBekl+=v;
+  });
+  const toplamMaliyet=maliyetGercek+maliyetBekleyen;
+  return{sozlesme,musteri,durum,maliyetGercek,maliyetBekleyen,toplamMaliyet,tahsilat,musteriMasrafBekl,maliyetKalemler,
+    kar:sozlesme-toplamMaliyet,kalan:sozlesme-tahsilat};
+}
+
+function guncelleProjeSayfasi(pid){
+  const v=projeVerisi(pid); if(!v)return;
+  const s=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const c=(id,cl)=>{const el=document.getElementById(id);if(el)el.className='ozet-val '+cl;};
+  s('oz-k-'+pid,v.sozlesme?fmt(v.kalan):'—');
+  c('oz-k-'+pid,v.kalan>0?'r':'g');
+  s('oz-s-'+pid,v.sozlesme?fmt(v.sozlesme):'—');
+  s('oz-t-'+pid,fmt(v.tahsilat));
+  s('oz-mb-'+pid,fmt(v.maliyetBekleyen));
+  s('oz-mg-'+pid,'Ödenen: '+fmt(v.maliyetGercek));
+  s('oz-mm-'+pid,fmt(v.musteriMasrafBekl));
+  s('oz-kar-'+pid,v.sozlesme?fmt(v.kar):'—');
+  c('oz-kar-'+pid,v.kar>=0?'g':'r');
+  const netDurum=v.kalan-v.maliyetBekleyen;
+  const ndEl=document.getElementById('oz-nd-'+pid);
+  const ndCard=document.getElementById('oz-nd-card-'+pid);
+  if(ndEl){ ndEl.textContent=v.sozlesme?fmt(netDurum):'—'; ndEl.className='ozet-val '+(netDurum>=0?'g':'r'); }
+  if(ndCard) ndCard.style.border=v.sozlesme?('1.5px solid '+(netDurum>=0?'#3B6D11':'#A32D2D')):'none';
+  guncellAna();
+}
+
+function projeTabloSatiri(v,pid){
+  const dc=v.durum==='Tamamlandı'?'dp-tam':v.durum==='Beklemede'?'dp-bek':'dp-devam';
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><span class="proje-link" onclick="showPage('p${pid}')">${escHtml(v.musteri)}</span></td>
+    <td class="ra">${v.sozlesme?fmt(v.sozlesme):'—'}</td>
+    <td class="ra g">${fmt(v.tahsilat)}</td>
+    <td class="ra ${v.kalan>0?'r':''}">${v.sozlesme?fmt(v.kalan):'—'}</td>
+    <td class="ra r">${fmt(v.maliyetBekleyen)}</td>
+    <td class="ra o">${fmt(v.maliyetGercek)}</td>
+    <td class="ra ${v.kar>=0?'g':'r'}">${v.sozlesme?fmt(v.kar):'—'}</td>
+    <td class="ra o">${v.musteriMasrafBekl>0?fmt(v.musteriMasrafBekl):'—'}</td>
+    <td><span class="durum-pill ${dc}">${escHtml(v.durum)}</span></td>`;
+  return tr;
+}
+
+function guncellAna(){
+  const tbody=document.getElementById('ana-tbody');
+  const tfoot=document.getElementById('ana-tfoot');
+  const bekTbody=document.getElementById('bek-tbody');
+  const bekTfoot=document.getElementById('bek-tfoot');
+  if(!tbody)return;
+  tbody.innerHTML=''; bekTbody.innerHTML='';
+
+  let totS=0,totT=0,totMG=0,totMB=0,totMM=0;
+  let bekS=0,bekT=0,bekMG=0,bekMB=0,bekMM=0;
+  const alacakMap={};
+
+  projeler.forEach(pid=>{
+    const v=projeVerisi(pid); if(!v)return;
+    if(v.durum==='Beklemede'){
+      bekS+=v.sozlesme; bekT+=v.tahsilat; bekMG+=v.maliyetGercek; bekMB+=v.maliyetBekleyen; bekMM+=v.musteriMasrafBekl;
+      bekTbody.appendChild(projeTabloSatiri(v,pid));
+    } else {
+      totS+=v.sozlesme; totT+=v.tahsilat; totMG+=v.maliyetGercek; totMB+=v.maliyetBekleyen; totMM+=v.musteriMasrafBekl;
+      if(v.musteriMasrafBekl>0) alacakMap[v.musteri]=(alacakMap[v.musteri]||0)+v.musteriMasrafBekl;
+      tbody.appendChild(projeTabloSatiri(v,pid));
+    }
+  });
+
+  const totKar=totS-(totMG+totMB);
+  const bekKar=bekS-(bekMG+bekMB);
+
+  tfoot.innerHTML=`<td style="color:var(--tx2);font-size:12px;">TOPLAM</td>
+    <td class="ra">${fmt(totS)}</td><td class="ra g">${fmt(totT)}</td>
+    <td class="ra r">${fmt(totS-totT)}</td>
+    <td class="ra r">${fmt(totMB)}</td><td class="ra o">${fmt(totMG)}</td>
+    <td class="ra ${totKar>=0?'g':'r'}">${fmt(totKar)}</td>
+    <td class="ra o">${fmt(totMM)}</td><td></td>`;
+
+  bekTfoot.innerHTML=`<td style="color:var(--tx2);font-size:12px;">TOPLAM (beklemede)</td>
+    <td class="ra">${fmt(bekS)}</td><td class="ra g">${fmt(bekT)}</td>
+    <td class="ra r">${fmt(bekS-bekT)}</td>
+    <td class="ra r">${fmt(bekMB)}</td><td class="ra o">${fmt(bekMG)}</td>
+    <td class="ra ${bekKar>=0?'g':'r'}">${fmt(bekKar)}</td>
+    <td class="ra o">${fmt(bekMM)}</td><td></td>`;
+
+  // AKTİF ÖZET KARTLAR — Kalan alacak, Toplam borç yan yana
+  const totNetDurum=(totS-totT)-totMB;
+  document.getElementById('ana-ozet').innerHTML=`
+    <div class="ozet-card"><div class="ozet-label">Kalan alacak</div><div class="ozet-val r">${fmt(totS-totT)}</div></div>
+    <div class="ozet-card">
+      <div class="ozet-label">Toplam borç (bekleyen)</div>
+      <div class="ozet-val r">${fmt(totMB)}</div>
+      <div class="ozet-sub">Ödenen gider: ${fmt(totMG)}</div>
+    </div>
+    <div class="ozet-card" style="border:1.5px solid ${totNetDurum>=0?'#3B6D11':'#A32D2D'};">
+      <div class="ozet-label">Net durum (alacak − borç)</div>
+      <div class="ozet-val ${totNetDurum>=0?'g':'r'}">${fmt(totNetDurum)}</div>
+    </div>
+    <div class="ozet-card"><div class="ozet-label">Toplam sözleşme</div><div class="ozet-val n">${fmt(totS)}</div></div>
+    <div class="ozet-card"><div class="ozet-label">Toplam tahsilat</div><div class="ozet-val g">${fmt(totT)}</div></div>
+    <div class="ozet-card"><div class="ozet-label">Net kâr tahmini</div><div class="ozet-val ${totKar>=0?'g':'r'}">${fmt(totKar)}</div></div>
+    <div class="ozet-card"><div class="ozet-label">Tahsil bekl. masraf</div><div class="ozet-val o">${fmt(totMM)}</div></div>`;
+
+  // BEKLEMEDEKİ ÖZET KARTLAR
+  const bekNetDurum=(bekS-bekT)-bekMB;
+  document.getElementById('bek-ozet').innerHTML=`
+    <div class="ozet-card"><div class="ozet-label">Kalan alacak</div><div class="ozet-val r">${fmt(bekS-bekT)}</div></div>
+    <div class="ozet-card">
+      <div class="ozet-label">Toplam borç (bekleyen)</div>
+      <div class="ozet-val r">${fmt(bekMB)}</div>
+      <div class="ozet-sub">Ödenen gider: ${fmt(bekMG)}</div>
+    </div>
+    <div class="ozet-card" style="border:1.5px solid ${bekNetDurum>=0?'#3B6D11':'#A32D2D'};">
+      <div class="ozet-label">Net durum (alacak − borç)</div>
+      <div class="ozet-val ${bekNetDurum>=0?'g':'r'}">${fmt(bekNetDurum)}</div>
+    </div>
+    <div class="ozet-card"><div class="ozet-label">Sözleşme</div><div class="ozet-val n">${fmt(bekS)}</div></div>
+    <div class="ozet-card"><div class="ozet-label">Tahsilat</div><div class="ozet-val g">${fmt(bekT)}</div></div>
+    <div class="ozet-card"><div class="ozet-label">Net kâr tahmini</div><div class="ozet-val ${bekKar>=0?'g':'r'}">${fmt(bekKar)}</div></div>
+    <div class="ozet-card"><div class="ozet-label">Tahsil bekl. masraf</div><div class="ozet-val o">${fmt(bekMM)}</div></div>`;
+
+  // MALİYET LİSTESİ
+  const bl=document.getElementById('borc-listesi');
+  if(bl){
+    const maliyetMap2={};
+    const odenMap={};
+    projeler.forEach(pid=>{
+      const v2=projeVerisi(pid); if(!v2||v2.durum==='Beklemede')return;
+      v2.maliyetKalemler.forEach(k=>{ 
+        if(!k.gerceklesti) maliyetMap2[k.ad]=(maliyetMap2[k.ad]||0)+k.tutar;
+        else odenMap[k.ad]=(odenMap[k.ad]||0)+k.tutar;
+      });
+    });
+    // Tüm kalemleri birleştir
+    const tumKalemler=new Set([...Object.keys(maliyetMap2),...Object.keys(odenMap)]);
+    const sirali=[...tumKalemler].sort((a,b)=>(maliyetMap2[b]||0)-(maliyetMap2[a]||0));
+    let html='';
+    sirali.forEach(k=>{
+      const bek=maliyetMap2[k]||0;
+      const ode=odenMap[k]||0;
+      html+=`<div style="display:grid;grid-template-columns:1fr 120px 120px;gap:4px;padding:5px 0;border-bottom:0.5px solid var(--bd3);font-size:13px;align-items:center;">
+        <span>${escHtml(k)}</span>
+        <span style="text-align:right;" class="${bek>0?'r':'n'}">${bek>0?fmt(bek):'—'}</span>
+        <span style="text-align:right;" class="${ode>0?'g':'n'}">${ode>0?fmt(ode):'—'}</span>
+      </div>`;
+    });
+    if(!html) html='<p class="no-data">Henüz kalem yok</p>';
+    bl.innerHTML=html;
+    const tb=document.getElementById('toplam-borc');
+    if(tb)tb.textContent=fmt(totMB);
+    const to=document.getElementById('toplam-odenen');
+    if(to)to.textContent=fmt(totMG);
+  }
+
+  // ALACAKLAR MİNİ
+  const al=document.getElementById('alacak-listesi');
+  const alacaklar=Object.entries(alacakMap).filter(([,v])=>v>0);
+  al.innerHTML=alacaklar.length
+    ?alacaklar.map(([k,v])=>`<div class="alacak-mini-satir"><span>${escHtml(k)}:</span><span class="tutar">${fmt(v)}</span></div>`).join('')
+    :'<span style="font-size:12px;color:var(--tx3);">Tahsil bekleyen masraf yok</span>';
+  document.getElementById('toplam-alacak').textContent=fmt(totMM);
+}
+
+window.showPage=function(pid){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+pid)?.classList.add('active');
+  document.getElementById('nav-'+pid)?.classList.add('active');
+  if(pid==='ana')guncellAna();
+}
+
+window.yeniProje=function(){
+  projeIdx++; const pid=projeIdx;
+  projeler.push(pid);
+  projeOlustur(pid,null);
+  showPage('p'+pid);
+  otomatikKaydet();
+}
+
+window._projeKaldir=function(pid){
+  if(!confirm('Bu projeyi silmek istediğinden emin misin?'))return;
+  projeler=projeler.filter(p=>p!==pid);
+  document.getElementById('page-p'+pid)?.remove();
+  document.getElementById('nav-p'+pid)?.remove();
+  showPage('ana'); kaydet();
+}
+
+window._guncelle=guncelleProjeSayfasi;
+window._otoKaydet=otomatikKaydet;
+window._ekle=ekleKalem;
+
+baslatDinleme();
+</script>
+</body>
+</html>
