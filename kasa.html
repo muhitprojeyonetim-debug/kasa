@@ -55,6 +55,9 @@ body{font-family:var(--font);font-size:14px;color:var(--tx1);background:var(--bg
 .beklemede-bolum{margin-top:2rem;padding-top:1.5rem;border-top:2px dashed var(--bd2);}
 .beklemede-baslik{font-size:13px;font-weight:500;color:var(--tx2);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
 .badge-bek{background:#FAEEDA;color:#633806;font-size:12px;padding:3px 10px;border-radius:var(--r-md);}
+.badge-tam{background:#EAF3DE;color:#27500A;font-size:12px;padding:3px 10px;border-radius:var(--r-md);}
+.nav-btn.tamamlandi{opacity:.55;}
+.nav-btn.tamamlandi.active{opacity:1;}
 
 /* ALACAKLAR MINI */
 .alacak-mini{background:var(--bg1);border:0.5px solid var(--bd3);border-radius:var(--r-lg);padding:.85rem 1rem;margin-bottom:1.5rem;}
@@ -171,8 +174,8 @@ tfoot tr td{padding:8px 10px;border-top:1px solid var(--bd2);font-weight:500;}
             <th class="ra">Sözleşme</th>
             <th class="ra">Tahsilat</th>
             <th class="ra">Kalan alacak</th>
-            <th class="ra">Gerçekleşen maliyet</th>
-            <th class="ra">Bekleyen maliyet</th>
+            <th class="ra">Bekleyen borç</th>
+            <th class="ra">Ödenen gider</th>
             <th class="ra">Net kâr</th>
             <th class="ra">Müşteri masrafı</th>
             <th>Durum</th>
@@ -180,6 +183,34 @@ tfoot tr td{padding:8px 10px;border-top:1px solid var(--bd2);font-weight:500;}
           <tbody id="bek-tbody"></tbody>
           <tfoot><tr id="bek-tfoot"></tr></tfoot>
         </table>
+      </div>
+    </div>
+
+    <!-- TAMAMLANAN İŞLER -->
+    <div class="beklemede-bolum">
+      <div class="beklemede-baslik" style="cursor:pointer;user-select:none;" onclick="window._togTam()">
+        <span id="tam-ok">▶</span> ✅ Tamamlanan işler
+        <span class="badge-tam" id="tam-sayi">0 proje</span>
+      </div>
+      <div id="tam-icerik" style="display:none;">
+        <div class="ozet-grid" id="tam-ozet"></div>
+        <div class="tbl-card">
+          <table class="ana-tablo">
+            <thead><tr>
+              <th>Proje / Müşteri</th>
+              <th class="ra">Sözleşme</th>
+              <th class="ra">Tahsilat</th>
+              <th class="ra">Kalan alacak</th>
+              <th class="ra">Bekleyen borç</th>
+              <th class="ra">Ödenen gider</th>
+              <th class="ra">Net kâr</th>
+              <th class="ra">Müşteri masrafı</th>
+              <th>Durum</th>
+            </tr></thead>
+            <tbody id="tam-tbody"></tbody>
+            <tfoot><tr id="tam-tfoot"></tr></tfoot>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -571,16 +602,27 @@ function guncellAna(){
   const tfoot=document.getElementById('ana-tfoot');
   const bekTbody=document.getElementById('bek-tbody');
   const bekTfoot=document.getElementById('bek-tfoot');
+  const tamTbody=document.getElementById('tam-tbody');
+  const tamTfoot=document.getElementById('tam-tfoot');
   if(!tbody)return;
-  tbody.innerHTML=''; bekTbody.innerHTML='';
+  tbody.innerHTML=''; bekTbody.innerHTML=''; if(tamTbody)tamTbody.innerHTML='';
 
   let totS=0,totT=0,totMG=0,totMB=0,totMM=0;
   let bekS=0,bekT=0,bekMG=0,bekMB=0,bekMM=0;
+  let tamS=0,tamT=0,tamMG=0,tamMB=0,tamMM=0,tamSayi=0;
   const alacakMap={};
 
   projeler.forEach(pid=>{
     const v=projeVerisi(pid); if(!v)return;
-    if(v.durum==='Beklemede'){
+    const navBtn=document.getElementById('nav-p'+pid);
+    if(navBtn) navBtn.classList.toggle('tamamlandi', v.durum==='Tamamlandı');
+
+    if(v.durum==='Tamamlandı'){
+      tamS+=v.sozlesme; tamT+=v.tahsilat; tamMG+=v.maliyetGercek; tamMB+=v.maliyetBekleyen; tamMM+=v.musteriMasrafBekl;
+      tamSayi++;
+      if(v.musteriMasrafBekl>0) alacakMap[v.musteri]=(alacakMap[v.musteri]||0)+v.musteriMasrafBekl;
+      if(tamTbody) tamTbody.appendChild(projeTabloSatiri(v,pid));
+    } else if(v.durum==='Beklemede'){
       bekS+=v.sozlesme; bekT+=v.tahsilat; bekMG+=v.maliyetGercek; bekMB+=v.maliyetBekleyen; bekMM+=v.musteriMasrafBekl;
       bekTbody.appendChild(projeTabloSatiri(v,pid));
     } else {
@@ -592,6 +634,41 @@ function guncellAna(){
 
   const totKar=totS-(totMG+totMB);
   const bekKar=bekS-(bekMG+bekMB);
+  const tamKar=tamS-(tamMG+tamMB);
+
+  // Tamamlanan bölümü
+  const tamSayiEl=document.getElementById('tam-sayi');
+  if(tamSayiEl) tamSayiEl.textContent=tamSayi+' proje';
+  if(tamTbody && tamSayi===0){
+    tamTbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:16px;">Henüz tamamlanan iş yok</td></tr>';
+  }
+  if(tamTfoot){
+    tamTfoot.innerHTML=`<td style="color:var(--tx2);font-size:12px;">TOPLAM (tamamlanan)</td>
+      <td class="ra">${fmt(tamS)}</td><td class="ra g">${fmt(tamT)}</td>
+      <td class="ra ${tamS-tamT>0?'r':'g'}">${fmt(tamS-tamT)}</td>
+      <td class="ra r">${fmt(tamMB)}</td><td class="ra o">${fmt(tamMG)}</td>
+      <td class="ra ${tamKar>=0?'g':'r'}">${fmt(tamKar)}</td>
+      <td class="ra o">${fmt(tamMM)}</td><td></td>`;
+  }
+  const tamOzetEl=document.getElementById('tam-ozet');
+  if(tamOzetEl){
+    const tamNet=(tamS-tamT)-tamMB;
+    tamOzetEl.innerHTML=`
+      <div class="ozet-card"><div class="ozet-label">Kalan alacak</div><div class="ozet-val ${tamS-tamT>0?'r':'g'}">${fmt(tamS-tamT)}</div></div>
+      <div class="ozet-card">
+        <div class="ozet-label">Toplam borç (bekleyen)</div>
+        <div class="ozet-val r">${fmt(tamMB)}</div>
+        <div class="ozet-sub">Ödenen gider: ${fmt(tamMG)}</div>
+      </div>
+      <div class="ozet-card" style="border:1.5px solid ${tamNet>=0?'#3B6D11':'#A32D2D'};">
+        <div class="ozet-label">Net durum (alacak − borç)</div>
+        <div class="ozet-val ${tamNet>=0?'g':'r'}">${fmt(tamNet)}</div>
+      </div>
+      <div class="ozet-card"><div class="ozet-label">Sözleşme</div><div class="ozet-val n">${fmt(tamS)}</div></div>
+      <div class="ozet-card"><div class="ozet-label">Tahsilat</div><div class="ozet-val g">${fmt(tamT)}</div></div>
+      <div class="ozet-card"><div class="ozet-label">Net kâr</div><div class="ozet-val ${tamKar>=0?'g':'r'}">${fmt(tamKar)}</div></div>
+      <div class="ozet-card"><div class="ozet-label">Tahsil bekl. masraf</div><div class="ozet-val o">${fmt(tamMM)}</div></div>`;
+  }
 
   tfoot.innerHTML=`<td style="color:var(--tx2);font-size:12px;">TOPLAM</td>
     <td class="ra">${fmt(totS)}</td><td class="ra g">${fmt(totT)}</td>
@@ -708,6 +785,14 @@ window._projeKaldir=function(pid){
   document.getElementById('nav-p'+pid)?.remove();
   showPage('ana'); kaydet();
 }
+
+window._togTam=function(){
+  const el=document.getElementById('tam-icerik');
+  const ok=document.getElementById('tam-ok');
+  const acik=el.style.display!=='none';
+  el.style.display=acik?'none':'block';
+  ok.textContent=acik?'▶':'▼';
+};
 
 window._guncelle=guncelleProjeSayfasi;
 window._otoKaydet=otomatikKaydet;
