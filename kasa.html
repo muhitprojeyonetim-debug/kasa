@@ -725,24 +725,38 @@ function guncellAna(){
   if(bl){
     const maliyetMap2={};
     const odenMap={};
+    const kalemDetay={}; // {kalemAdi: [{proje, bek, ode}]}
     projeler.forEach(pid=>{
       const v2=projeVerisi(pid); if(!v2||v2.durum==='Beklemede')return;
-      v2.maliyetKalemler.forEach(k=>{ 
+      v2.maliyetKalemler.forEach(k=>{
         if(!k.gerceklesti) maliyetMap2[k.ad]=(maliyetMap2[k.ad]||0)+k.tutar;
         else odenMap[k.ad]=(odenMap[k.ad]||0)+k.tutar;
+        if(k.tutar>0){
+          if(!kalemDetay[k.ad]) kalemDetay[k.ad]=[];
+          const bekTutar=k.gerceklesti?0:k.tutar;
+          const odeTutar=k.gerceklesti?k.tutar:0;
+          const mevcut=kalemDetay[k.ad].find(x=>x.proje===v2.musteri);
+          if(mevcut){ mevcut.bek+=bekTutar; mevcut.ode+=odeTutar; }
+          else kalemDetay[k.ad].push({proje:v2.musteri,bek:bekTutar,ode:odeTutar});
+        }
       });
     });
+    window._kalemDetay=kalemDetay;
     // Tüm kalemleri birleştir
     const tumKalemler=new Set([...Object.keys(maliyetMap2),...Object.keys(odenMap)]);
     const sirali=[...tumKalemler].sort((a,b)=>(maliyetMap2[b]||0)-(maliyetMap2[a]||0));
     let html='';
-    sirali.forEach(k=>{
+    sirali.forEach((k,idx)=>{
       const bek=maliyetMap2[k]||0;
       const ode=odenMap[k]||0;
-      html+=`<div style="display:grid;grid-template-columns:1fr 120px 120px;gap:4px;padding:5px 0;border-bottom:0.5px solid var(--bd3);font-size:13px;align-items:center;">
-        <span>${escHtml(k)}</span>
-        <span style="text-align:right;" class="${bek>0?'r':'n'}">${bek>0?fmt(bek):'—'}</span>
-        <span style="text-align:right;" class="${ode>0?'g':'n'}">${ode>0?fmt(ode):'—'}</span>
+      const safeId='kd-'+idx;
+      html+=`<div>
+        <div style="display:grid;grid-template-columns:1fr 120px 120px;gap:4px;padding:5px 0;border-bottom:0.5px solid var(--bd3);font-size:13px;align-items:center;cursor:pointer;" onclick="window._toggleKalemDetay('${safeId}','${escHtml(k)}')">
+          <span>${escHtml(k)} <span style="font-size:10px;color:var(--tx3);">▾</span></span>
+          <span style="text-align:right;" class="${bek>0?'r':'n'}">${bek>0?fmt(bek):'—'}</span>
+          <span style="text-align:right;" class="${ode>0?'g':'n'}">${ode>0?fmt(ode):'—'}</span>
+        </div>
+        <div id="${safeId}" style="display:none;padding:6px 12px;background:var(--bg2);border-radius:6px;margin:4px 0;font-size:12px;"></div>
       </div>`;
     });
     if(!html) html='<p class="no-data">Henüz kalem yok</p>';
@@ -792,6 +806,30 @@ window._togTam=function(){
   const acik=el.style.display!=='none';
   el.style.display=acik?'none':'block';
   ok.textContent=acik?'▶':'▼';
+};
+
+window._toggleKalemDetay=function(id,kalemAdi){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const acik=el.style.display!=='none';
+  // Diğer açık detayları kapat
+  document.querySelectorAll('[id^="kd-"]').forEach(d=>{ if(d.id!==id) d.style.display='none'; });
+  if(acik){ el.style.display='none'; return; }
+
+  const detaylar=(window._kalemDetay&&window._kalemDetay[kalemAdi])||[];
+  if(!detaylar.length){ el.innerHTML='<span style="color:var(--tx3);">Detay bulunamadı</span>'; el.style.display='block'; return; }
+
+  const sirali=[...detaylar].sort((a,b)=>(b.bek+b.ode)-(a.bek+a.ode));
+  el.innerHTML=sirali.map(d=>{
+    let parts=[];
+    if(d.bek>0) parts.push(`<span class="r">Bekleyen: ${fmt(d.bek)}</span>`);
+    if(d.ode>0) parts.push(`<span class="g">Ödenen: ${fmt(d.ode)}</span>`);
+    return `<div style="display:flex;justify-content:space-between;padding:3px 0;gap:8px;">
+      <span style="color:var(--tx2);">${escHtml(d.proje)}</span>
+      <span style="display:flex;gap:10px;">${parts.join(' ')}</span>
+    </div>`;
+  }).join('');
+  el.style.display='block';
 };
 
 window._guncelle=guncelleProjeSayfasi;
