@@ -459,20 +459,18 @@ function projeOlustur(pid,s){
     </div>`;
   document.querySelector('.app').appendChild(page);
 
-  // Maliyet kalemlerini doldur — globalKalemler baz alınır, kayıtlı tutarlar eşleştirilir
-  const kayitliMap={};
-  (s?.maliyetKalemler||[]).forEach(k=>{ kayitliMap[k.ad]=k; });
-
-  globalKalemler.forEach(ad=>{
-    const k=kayitliMap[ad]||{};
-    ekleKalem('maliyet',pid,ad,k.tutar||'',k.not||'',k.gerceklesti||false,k.teslimAlindi||false);
-  });
-  // Kayıtlı olup globalKalemler'de olmayan eski kalemler
-  (s?.maliyetKalemler||[]).forEach(k=>{
-    if(!globalKalemler.includes(k.ad)){
+  // Maliyet kalemlerini doldur:
+  // - Yeni proje (s===null): varsayılan globalKalemler listesiyle başlat
+  // - Mevcut proje: SADECE kayıtlı veriyi kullan (silinen kalemler geri gelmesin)
+  if(s === null || s === undefined){
+    globalKalemler.forEach(ad=>{
+      ekleKalem('maliyet',pid,ad,'','',false,false);
+    });
+  } else {
+    (s.maliyetKalemler||[]).forEach(k=>{
       ekleKalem('maliyet',pid,k.ad,k.tutar||'',k.not||'',k.gerceklesti||false,k.teslimAlindi||false);
-    }
-  });
+    });
+  }
 
   s?.musteriMasraflar?.forEach(k=>ekleKalem('musteri-masraf',pid,k.aciklama,k.tutar,k.tarih,k.tahsil));
   s?.tahsilatlar?.forEach(k=>ekleKalem('tahsilat',pid,k.aciklama,k.tutar,k.tarih));
