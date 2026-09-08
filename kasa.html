@@ -133,6 +133,7 @@ tfoot tr td{padding:8px 10px;border-top:1px solid var(--bd2);font-weight:500;}
           <th class="ra">Kalan alacak</th>
           <th class="ra">Bekleyen borç</th>
           <th class="ra">Ödenen gider</th>
+          <th class="ra">Net durum</th>
           <th class="ra">Net kâr</th>
           <th class="ra">Müşteri masrafı</th>
           <th>Durum</th>
@@ -176,6 +177,7 @@ tfoot tr td{padding:8px 10px;border-top:1px solid var(--bd2);font-weight:500;}
             <th class="ra">Kalan alacak</th>
             <th class="ra">Bekleyen borç</th>
             <th class="ra">Ödenen gider</th>
+            <th class="ra">Net durum</th>
             <th class="ra">Net kâr</th>
             <th class="ra">Müşteri masrafı</th>
             <th>Durum</th>
@@ -203,6 +205,7 @@ tfoot tr td{padding:8px 10px;border-top:1px solid var(--bd2);font-weight:500;}
               <th class="ra">Kalan alacak</th>
               <th class="ra">Bekleyen borç</th>
               <th class="ra">Ödenen gider</th>
+              <th class="ra">Net durum</th>
               <th class="ra">Net kâr</th>
               <th class="ra">Müşteri masrafı</th>
               <th>Durum</th>
@@ -583,6 +586,7 @@ function guncelleProjeSayfasi(pid){
 
 function projeTabloSatiri(v,pid){
   const dc=v.durum==='Tamamlandı'?'dp-tam':v.durum==='Beklemede'?'dp-bek':'dp-devam';
+  const netDurum=v.kalan-v.maliyetBekleyen;
   const tr=document.createElement('tr');
   tr.innerHTML=`
     <td><span class="proje-link" onclick="showPage('p${pid}')">${escHtml(v.musteri)}</span></td>
@@ -591,6 +595,7 @@ function projeTabloSatiri(v,pid){
     <td class="ra ${v.kalan>0?'r':''}">${v.sozlesme?fmt(v.kalan):'—'}</td>
     <td class="ra r">${fmt(v.maliyetBekleyen)}</td>
     <td class="ra o">${fmt(v.maliyetGercek)}</td>
+    <td class="ra ${netDurum>=0?'g':'r'}" style="font-weight:500;">${v.sozlesme?fmt(netDurum):'—'}</td>
     <td class="ra ${v.kar>=0?'g':'r'}">${v.sozlesme?fmt(v.kar):'—'}</td>
     <td class="ra o">${v.musteriMasrafBekl>0?fmt(v.musteriMasrafBekl):'—'}</td>
     <td><span class="durum-pill ${dc}">${escHtml(v.durum)}</span></td>`;
@@ -640,13 +645,15 @@ function guncellAna(){
   const tamSayiEl=document.getElementById('tam-sayi');
   if(tamSayiEl) tamSayiEl.textContent=tamSayi+' proje';
   if(tamTbody && tamSayi===0){
-    tamTbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:16px;">Henüz tamamlanan iş yok</td></tr>';
+    tamTbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:16px;">Henüz tamamlanan iş yok</td></tr>';
   }
+  const tamNetDurum=(tamS-tamT)-tamMB;
   if(tamTfoot){
     tamTfoot.innerHTML=`<td style="color:var(--tx2);font-size:12px;">TOPLAM (tamamlanan)</td>
       <td class="ra">${fmt(tamS)}</td><td class="ra g">${fmt(tamT)}</td>
       <td class="ra ${tamS-tamT>0?'r':'g'}">${fmt(tamS-tamT)}</td>
       <td class="ra r">${fmt(tamMB)}</td><td class="ra o">${fmt(tamMG)}</td>
+      <td class="ra ${tamNetDurum>=0?'g':'r'}" style="font-weight:500;">${fmt(tamNetDurum)}</td>
       <td class="ra ${tamKar>=0?'g':'r'}">${fmt(tamKar)}</td>
       <td class="ra o">${fmt(tamMM)}</td><td></td>`;
   }
@@ -670,17 +677,21 @@ function guncellAna(){
       <div class="ozet-card"><div class="ozet-label">Tahsil bekl. masraf</div><div class="ozet-val o">${fmt(tamMM)}</div></div>`;
   }
 
+  const totNetDurumRow=(totS-totT)-totMB;
   tfoot.innerHTML=`<td style="color:var(--tx2);font-size:12px;">TOPLAM</td>
     <td class="ra">${fmt(totS)}</td><td class="ra g">${fmt(totT)}</td>
     <td class="ra r">${fmt(totS-totT)}</td>
     <td class="ra r">${fmt(totMB)}</td><td class="ra o">${fmt(totMG)}</td>
+    <td class="ra ${totNetDurumRow>=0?'g':'r'}" style="font-weight:500;">${fmt(totNetDurumRow)}</td>
     <td class="ra ${totKar>=0?'g':'r'}">${fmt(totKar)}</td>
     <td class="ra o">${fmt(totMM)}</td><td></td>`;
 
+  const bekNetDurumRow=(bekS-bekT)-bekMB;
   bekTfoot.innerHTML=`<td style="color:var(--tx2);font-size:12px;">TOPLAM (beklemede)</td>
     <td class="ra">${fmt(bekS)}</td><td class="ra g">${fmt(bekT)}</td>
     <td class="ra r">${fmt(bekS-bekT)}</td>
     <td class="ra r">${fmt(bekMB)}</td><td class="ra o">${fmt(bekMG)}</td>
+    <td class="ra ${bekNetDurumRow>=0?'g':'r'}" style="font-weight:500;">${fmt(bekNetDurumRow)}</td>
     <td class="ra ${bekKar>=0?'g':'r'}">${fmt(bekKar)}</td>
     <td class="ra o">${fmt(bekMM)}</td><td></td>`;
 
